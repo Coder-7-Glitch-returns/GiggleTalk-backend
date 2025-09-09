@@ -10,7 +10,9 @@ async function signUp(req, res) {
 
     // ----- Check if fields are filled -----
     if (!fullName || !email || !password) {
-      return res.status(400).json({ success: false, message: "All fields are required" });
+      return res
+        .status(400)
+        .json({ success: false, message: "All fields are required" });
     }
 
     // ----- Check if user already exists -----
@@ -61,7 +63,12 @@ async function signUp(req, res) {
 async function login(req, res) {
   try {
     const { email, password } = req.body;
-
+    // ----- Check if fields are filled -----
+    if (!email || !password) {
+      return res
+        .status(400)
+        .json({ success: false, message: "All fields are required" });
+    }
     // ----- Check if user exists -----
     const [rows] = await db.query("SELECT * FROM users WHERE email = ?", [
       email,
