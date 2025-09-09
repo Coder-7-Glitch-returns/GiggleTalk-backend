@@ -9,6 +9,6 @@ const db = sql2.createPool({
   user: "sa-blogs",
   password: "3104944Tony",
   database: "sa-blogs_giggle_talk_db",
-});
+}).promise();
 
 export default db;

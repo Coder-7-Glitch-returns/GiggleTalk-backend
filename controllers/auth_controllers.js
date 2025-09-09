@@ -9,41 +9,98 @@ async function signUp(req, res) {
     const { fullName, email, password } = req.body;
 
     // ----- Check if user already exists -----
-    const [existingUser] = await db.execute(
-      "SELECT * FROM users WHERE email = ?",
-      [email],
-    );
-    if (existingUser) {
-      res.status(400).json({ success: false, message: "User already exists" });
+    const [rows] = await db.query("SELECT * FROM users WHERE email = ?", [
+      email,
+    ]);
+    if (rows.length > 0) {
+      return res
+        .status(400)
+        .json({ success: false, message: "User already exists" });
     }
+
+    // ----- Validate password length -----
     if (password.length < 8) {
-      res.status(400).json({
+      return res.status(400).json({
         success: false,
-        message: "Password length should be exactly 8 characters",
+        message: "Password length should be at least 8 characters",
       });
     }
 
-    //   ----- Hash the password -----
+    // ----- Hash the password -----
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    //   ----- Generate JWT token -----
+    // ----- Generate JWT token -----
     const token = jwt.sign(
       { email: email },
       process.env.JWT_SECRET || "fallbackSecret",
+      { expiresIn: "1h" }
     );
-    //   ----- Insert new user into the database -----
-    await db.execute(
-      "INSERT INTO users (fullName, email, password, token) VALUES (?, ?, ?)",
-      [fullName, email, hashedPassword, token],
+
+    // ----- Insert new user into the database -----
+    await db.query(
+      "INSERT INTO users (fullName, email, password, token) VALUES (?, ?, ?, ?)",
+      [fullName, email, hashedPassword, token]
     );
-    res
-      .status(201)
-      .json({ success: true, message: "User registered successfully" });
+
+    return res.status(201).json({
+      success: true,
+      message: "User registered successfully",
+    });
   } catch (error) {
-    res.status(500).json({ message: "Server error" });
-    console.log("SignUp API error:", error);
+    console.error("SignUp API error:", error);
+    return res.status(500).json({ message: "Server error" });
+  }
+}
+
+// ===== login API =====
+async function login(req, res) {
+  try {
+    const { email, password } = req.body;
+
+    // ----- Check if user exists -----
+    const [rows] = await db.query("SELECT * FROM users WHERE email = ?", [
+      email,
+    ]);
+    if (rows.length === 0) {
+      return res
+        .status(400)
+        .json({ success: false, message: "Invalid credentials" });
+    }
+
+    const user = rows[0];
+
+    // ----- Compare password -----
+    const isMatch = await bcrypt.compare(password, user.password);
+    if (!isMatch) {
+      return res
+        .status(400)
+        .json({ success: false, message: "Invalid credentials" });
+    }
+
+    // ----- Generate new JWT token -----
+    const token = jwt.sign(
+      { email: user.email },
+      process.env.JWT_SECRET || "fallbackSecret",
+      { expiresIn: "1h" }
+    );
+
+    // ----- Update token in DB -----
+    await db.query("UPDATE users SET token = ? WHERE email = ?", [
+      token,
+      email,
+    ]);
+
+    return res.status(200).json({
+      success: true,
+      message: "Login successful",
+      token,
+      user: { id: user.id, fullName: user.fullName, email: user.email },
+    });
+  } catch (error) {
+    console.error("Login API error:", error);
+    return res.status(500).json({ message: "Server error" });
   }
 }
 
 // ----- Export the API Functions -----
-export default { signUp };
+export default { signUp, login };
