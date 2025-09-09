@@ -40,13 +40,13 @@ async function signUp(req, res) {
     const token = jwt.sign(
       { email: email },
       process.env.JWT_SECRET || "fallbackSecret",
-      { expiresIn: "1h" }
+      { expiresIn: "1h" },
     );
 
     // ----- Insert new user into the database -----
     await db.query(
       "INSERT INTO users (fullName, email, password, token) VALUES (?, ?, ?, ?)",
-      [fullName, email, hashedPassword, token]
+      [fullName, email, hashedPassword, token],
     );
 
     return res.status(201).json({
