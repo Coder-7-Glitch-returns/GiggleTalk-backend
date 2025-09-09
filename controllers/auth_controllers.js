@@ -8,6 +8,11 @@ async function signUp(req, res) {
   try {
     const { fullName, email, password } = req.body;
 
+    // ----- Check if fields are filled -----
+    if (!fullName || !email || !password) {
+      return res.status(400).json({ success: false, message: "All fields are required" });
+    }
+
     // ----- Check if user already exists -----
     const [rows] = await db.query("SELECT * FROM users WHERE email = ?", [
       email,
@@ -77,24 +82,9 @@ async function login(req, res) {
         .json({ success: false, message: "Invalid credentials" });
     }
 
-    // ----- Generate new JWT token -----
-    const token = jwt.sign(
-      { email: user.email },
-      process.env.JWT_SECRET || "fallbackSecret",
-      { expiresIn: "1h" }
-    );
-
-    // ----- Update token in DB -----
-    await db.query("UPDATE users SET token = ? WHERE email = ?", [
-      token,
-      email,
-    ]);
-
     return res.status(200).json({
       success: true,
       message: "Login successful",
-      token,
-      user: { id: user.id, fullName: user.fullName, email: user.email },
     });
   } catch (error) {
     console.error("Login API error:", error);
