@@ -4,7 +4,8 @@
 import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
-import usersTable from './models/schemas.js';
+import usersTable from "./models/schemas.js";
+import authRouters from "./routes/auth_routes.js";
 
 // ----- dotenv -----
 dotenv.config();
@@ -21,7 +22,7 @@ app.use(express.urlencoded({ extended: true }));
 
 // ----- Routes -----
 // AUTHENTICATION
-// app.use('/api/auth',)
+app.use("/api/auth", authRouters);
 
 // ----- Debug -----
 app.listen(PORT, () => {
