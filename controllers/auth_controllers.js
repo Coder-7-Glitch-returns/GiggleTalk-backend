@@ -92,6 +92,7 @@ async function login(req, res) {
     return res.status(200).json({
       success: true,
       message: "Login successful",
+      id: user.id,
     });
   } catch (error) {
     console.error("Login API error:", error);
