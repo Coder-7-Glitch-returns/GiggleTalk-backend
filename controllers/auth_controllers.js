@@ -36,7 +36,7 @@ export async function signUp(req, res) {
       otp,
     });
   } catch (error) {
-    console.error("OTP Error:", error);
+    console.log("OTP Error:", error);
     return res
       .status(500)
       .json({ success: false, message: "Failed to send OTP" });

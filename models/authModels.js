@@ -18,7 +18,7 @@ const createUser = async (userData) => {
 
 // ===== Find User by Email =====
 const findUserByEmail = async (email) => {
-  const query = `SELECT * FROM users WHERE email = ? LIMIT 1`;
+  const query = `SELECT * FROM users WHERE email = ?`;
   const [rows] = await db.execute(query, [email]);
   return rows[0]; // return single user or undefined
 };
