@@ -34,22 +34,28 @@ const loginUser = async (email) => {
 const signUpOTP = async (email) => {
   const otp = crypto.randomInt(100000, 999999).toString();
 
-  const transporter = nodemailer.createTransport({
-    service: "gmail",
-    auth: {
-      user: process.env.EMAIL_USER,
-      pass: process.env.EMAIL_PASS,
-    },
-  });
+  try {
+    const transporter = nodemailer.createTransport({
+      service: "gmail",
+      auth: {
+        user: process.env.EMAIL_USER,
+        pass: process.env.EMAIL_PASS,
+      },
+    });
 
-  const mailOptions = {
-    from: process.env.EMAIL_USER,
-    to: email,
-    subject: "Verify your account - Your OTP Code",
-    text: `Your OTP code is: ${otp}`,
-  };
-  await transporter.sendMail(mailOptions);
-  return otp;
+    const mailOptions = {
+      from: process.env.EMAIL_USER,
+      to: email,
+      subject: "Verify your account - Your OTP Code",
+      text: `Your OTP code is: ${otp}`,
+    };
+
+    await transporter.sendMail(mailOptions);
+    return otp;
+  } catch (error) {
+    console.error("Nodemailer Error:", error);
+    throw new Error("OTP sending failed");
+  }
 };
 
 // ===== Update-Password Model =====
