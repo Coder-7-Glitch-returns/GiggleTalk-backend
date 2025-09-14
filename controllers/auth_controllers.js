@@ -5,7 +5,7 @@ import authModels from "../models/authModels.js";
 import db from "../config/db.js";
 
 // ===== signUp API (send OTP only) =====
-async function signUp(req, res) {
+export async function signUp(req, res) {
   const { email, password, fullName } = req.body;
 
   if (!email || !password || !fullName) {
@@ -44,7 +44,7 @@ async function signUp(req, res) {
 }
 
 // ===== createUser API (after OTP verification) =====
-async function createUser(req, res) {
+export async function createUser(req, res) {
   try {
     const { fullName, email, password, otp } = req.body;
 
@@ -97,7 +97,7 @@ async function createUser(req, res) {
 }
 
 // ===== login API =====
-async function login(req, res) {
+export async function login(req, res) {
   try {
     const { email, password } = req.body;
 
@@ -134,7 +134,7 @@ async function login(req, res) {
 }
 
 // ===== Forget-Password API =====
-async function forgetPassword(req, res) {
+export async function forgetPassword(req, res) {
   const { email } = req.body;
 
   if (!email) {
@@ -165,7 +165,7 @@ async function forgetPassword(req, res) {
 }
 
 // ===== Update-Password API =====
-async function updatePassword(req, res) {
+export async function updatePassword(req, res) {
   try {
     const { email, otp, newPassword } = req.body;
 
@@ -212,4 +212,3 @@ async function updatePassword(req, res) {
 }
 
 // ----- Export -----
-export default { signUp, createUser, login, forgetPassword, updatePassword };

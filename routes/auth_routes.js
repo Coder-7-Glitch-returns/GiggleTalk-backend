@@ -2,21 +2,27 @@
 
 // ----- Imports -----
 import express from "express";
-import authController from "../controllers/auth_controllers.js";
+import {
+  createUser,
+  forgetPassword,
+  login,
+  signUp,
+  updatePassword,
+} from "../controllers/auth_controllers.js";
 const router = express.Router();
 
 // ----- Routes -----
 
 // Signup
 // -----  Sign Up -----
-router.post("/signup", authController.signUp);
+router.post("/signup", signUp);
 // -----  Sign Up OTP -----
-router.post("/create-user", authController.createUser);
+router.post("/create-user", createUser);
 // Login
-router.post("/login", authController.login);
+router.post("/login", login);
 // ----- Forget-Password -----
-router.post("/forget-password", authController.forgetPassword);
+router.post("/forget-password", forgetPassword);
 // ----- Update-Password -----
-router.post("/update-password", authController.updatePassword);
+router.post("/update-password", updatePassword);
 
 export default router;
