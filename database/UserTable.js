@@ -1,7 +1,7 @@
 // ===== models/schemas.js =====
 
 // ----- Imports -----
-import db from "./../config/db.js";
+import db from "../config/db.js ";
 
 const usersTable = async () => {
   try {

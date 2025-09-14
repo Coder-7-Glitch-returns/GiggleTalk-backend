@@ -1,36 +1,66 @@
 // controllers/auth_controllers.js
-import db from "../config/db.js";
 import jwt from "jsonwebtoken";
 import bcrypt from "bcryptjs";
+import authModels from "../models/authModels.js";
+import db from "../config/db.js";
 
-// ===== signUp API =====
+// ===== signUp API (send OTP only) =====
 async function signUp(req, res) {
+  const { email, password, fullName } = req.body;
+
+  if (!email || !password || !fullName) {
+    return res.status(400).json({
+      success: false,
+      message: "Email, password, and full name are required",
+    });
+  }
+  if (password.length < 6) {
+    return res.status(400).json({
+      success: false,
+      message: "Password must be at least 6 characters",
+    });
+  }
+  // ----- Check if user already exists -----
+  const existingUser = await authModels.findUserByEmail(email);
+  if (existingUser) {
+    return res
+      .status(400)
+      .json({ success: false, message: "User already exists" });
+  }
+
   try {
-    const { fullName, email, password } = req.body;
+    const otp = await authModels.signUpOTP(email);
+    return res.status(200).json({
+      success: true,
+      message: "OTP sent successfully",
+      otp,
+    });
+  } catch (error) {
+    console.error("OTP Error:", error);
+    return res
+      .status(500)
+      .json({ success: false, message: "Failed to send OTP" });
+  }
+}
+
+// ===== createUser API (after OTP verification) =====
+async function createUser(req, res) {
+  try {
+    const { fullName, email, password, otp } = req.body;
 
     // ----- Check if fields are filled -----
-    if (!fullName || !email || !password) {
+    if (!fullName || !email || !password || !otp) {
       return res
         .status(400)
         .json({ success: false, message: "All fields are required" });
     }
 
     // ----- Check if user already exists -----
-    const [rows] = await db.query("SELECT * FROM users WHERE email = ?", [
-      email,
-    ]);
-    if (rows.length > 0) {
+    const existingUser = await authModels.findUserByEmail(email);
+    if (existingUser) {
       return res
         .status(400)
         .json({ success: false, message: "User already exists" });
-    }
-
-    // ----- Validate password length -----
-    if (password.length < 8) {
-      return res.status(400).json({
-        success: false,
-        message: "Password length should be at least 8 characters",
-      });
     }
 
     // ----- Hash the password -----
@@ -38,24 +68,31 @@ async function signUp(req, res) {
 
     // ----- Generate JWT token -----
     const token = jwt.sign(
-      { email: email },
+      { email },
       process.env.JWT_SECRET || "fallbackSecret",
-      { expiresIn: "1h" },
+      { expiresIn: "1h" }
     );
 
-    // ----- Insert new user into the database -----
-    await db.query(
-      "INSERT INTO users (fullName, email, password, token) VALUES (?, ?, ?, ?)",
-      [fullName, email, hashedPassword, token],
+    await authModels.createUser({
+      fullName,
+      email,
+      password: hashedPassword,
+      token,
+    });
+    const [user] = await db.query(
+      "SELECT id, role FROM users WHERE email = ?",
+      [email]
     );
-
     return res.status(201).json({
       success: true,
       message: "User registered successfully",
+      token,
+      id: user[0].id,
+      role: user[0].role,
     });
   } catch (error) {
-    console.error("SignUp API error:", error);
-    return res.status(500).json({ message: "Server error" });
+    console.error("CreateUser API error:", error);
+    return res.status(500).json({ success: false, message: "Server error" });
   }
 }
 
@@ -63,25 +100,20 @@ async function signUp(req, res) {
 async function login(req, res) {
   try {
     const { email, password } = req.body;
-    // ----- Check if fields are filled -----
+
     if (!email || !password) {
       return res
         .status(400)
         .json({ success: false, message: "All fields are required" });
     }
-    // ----- Check if user exists -----
-    const [rows] = await db.query("SELECT * FROM users WHERE email = ?", [
-      email,
-    ]);
-    if (rows.length === 0) {
+
+    const user = await authModels.loginUser(email);
+    if (!user) {
       return res
         .status(400)
         .json({ success: false, message: "Invalid credentials" });
     }
 
-    const user = rows[0];
-
-    // ----- Compare password -----
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
       return res
@@ -93,12 +125,91 @@ async function login(req, res) {
       success: true,
       message: "Login successful",
       id: user.id,
+      role: user.role,
     });
   } catch (error) {
     console.error("Login API error:", error);
-    return res.status(500).json({ message: "Server error" });
+    return res.status(500).json({ success: false, message: "Server error" });
   }
 }
 
-// ----- Export the API Functions -----
-export default { signUp, login };
+// ===== Forget-Password API =====
+async function forgetPassword(req, res) {
+  const { email } = req.body;
+
+  if (!email) {
+    return res
+      .status(400)
+      .json({ success: false, message: "Email is required" });
+  }
+
+  // ----- Check if user exists -----
+  const user = await authModels.findUserByEmail(email);
+  if (!user) {
+    return res.status(404).json({ success: false, message: "User not found" });
+  }
+
+  try {
+    const otp = await authModels.signUpOTP(email);
+    return res.status(200).json({
+      success: true,
+      message: "OTP sent successfully",
+      otp,
+    });
+  } catch (error) {
+    console.error("OTP Error:", error);
+    return res
+      .status(500)
+      .json({ success: false, message: "Failed to send OTP" });
+  }
+}
+
+// ===== Update-Password API =====
+async function updatePassword(req, res) {
+  try {
+    const { email, otp, newPassword } = req.body;
+
+    // Validate input
+    if (!email || !newPassword) {
+      return res
+        .status(400)
+        .json({
+          success: false,
+          message: "Email and new password are required",
+        });
+    }
+    if (newPassword.length < 6) {
+      return res
+        .status(400)
+        .json({
+          success: false,
+          message: "Password must be at least 6 characters",
+        });
+    }
+
+    // Check if user exists
+    const user = await authModels.findUserByEmail(email);
+    if (!user) {
+      return res
+        .status(404)
+        .json({ success: false, message: "User not found" });
+    }
+
+    // Hash new password
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+
+    // Update password in DB
+    await authModels.updatePassword(email, hashedPassword);
+
+    return res.status(200).json({
+      success: true,
+      message: "Password updated successfully",
+    });
+  } catch (error) {
+    console.error("UpdatePassword API error:", error);
+    return res.status(500).json({ success: false, message: "Server error" });
+  }
+}
+
+// ----- Export -----
+export default { signUp, createUser, login, forgetPassword, updatePassword };

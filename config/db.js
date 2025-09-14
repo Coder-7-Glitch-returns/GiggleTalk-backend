@@ -1,15 +1,16 @@
 // ===== config/db.js =====
 
 // ----- Imports -----
-import sql2 from "mysql2";
+import mysql from "mysql2";
+import dbConfig from "./db.config.js";
 
 // ----- Setup -----
-const db = sql2
+const db = mysql
   .createPool({
-    host: "mysql-sa-blogs.alwaysdata.net",
-    user: "sa-blogs",
-    password: "3104944Tony",
-    database: "sa-blogs_giggle_talk_db",
+    host: dbConfig.HOST,
+    user: dbConfig.USER,
+    password: dbConfig.PASSWORD,
+    database: dbConfig.DB,
   })
   .promise();
 
