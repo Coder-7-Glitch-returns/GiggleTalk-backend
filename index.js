@@ -23,10 +23,10 @@ app.use(express.urlencoded({ extended: true }));
 
 // ----- Nodemailer Transporter -----
 const transporter = nodemailer.createTransport({
-  service: process.env.EMAIL_SERVICE,
+  service: "smtp.gmail.com", // 👈 simpler than host/port
   auth: {
-    user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASS,
+    user: process.env.EMAIL_USER, // must exist in .env
+    pass: process.env.EMAIL_PASS, // must exist in .env (App Password)
   },
 });
 
