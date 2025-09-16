@@ -39,7 +39,7 @@ export async function signUp(req, res) {
     console.log("OTP Error:", error);
     return res
       .status(500)
-      .json({ success: false, message: "Failed to send OTP" });
+      .json({ success: false, message: "Failed to send OTP", error: error });
   }
 }
 
