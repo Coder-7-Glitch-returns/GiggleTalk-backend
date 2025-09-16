@@ -38,13 +38,13 @@ const signUpOTP = async (email) => {
     const transporter = nodemailer.createTransport({
       service: "gmail",
       auth: {
-        user: process.env.EMAIL_USER,
-        pass: process.env.EMAIL_PASS,
+        user: "ahad.dev.eng@gmail.com",
+        pass: "wwcz tuef fggd wuhf",
       },
     });
 
     const mailOptions = {
-      from: process.env.EMAIL_USER,
+      from: "ahad.dev.eng@gmail.com",
       to: email,
       subject: "Verify your account - Your OTP Code",
       text: `Your OTP code is: ${otp}`,
